@@ -1,17 +1,33 @@
 package tpms
 
-import "testing"
+import (
+	"testing"
+)
 
-type alarmTest struct {
-	it       string
-	expected bool
-	actual   func() bool
+func newSensorSpy(mockValue int) Sensor {
+	return &sensor{
+		offset: func() int {
+			return 0
+		},
+		samplePressure: func() int {
+			return mockValue
+		},
+	}
 }
 
 func TestAlarmHappyPath(t *testing.T) {
 	t.Run("the value is inside thresholds", func(t *testing.T) {
 		want := true
-		sensor := NewSensor()
+		sensor := newSensorSpy(0)
+		a := NewAlarm(sensor)
+		got := a.Check()
+		if got != want {
+			t.Errorf("got %t want %t \n", got, want)
+		}
+	})
+	t.Run("the value is below thresholds", func(t *testing.T) {
+		want := true
+		sensor := newSensorSpy(30)
 		a := NewAlarm(sensor)
 		got := a.Check()
 		if got != want {
@@ -20,16 +36,10 @@ func TestAlarmHappyPath(t *testing.T) {
 	})
 }
 
-type sensorSpy struct{}
-
-func (s sensorSpy) popNextPressurePsiValue() int {
-	return 17
-}
-
 func TestAlarmWrongPSI(t *testing.T) {
 	t.Run("the value is minor than the threshold", func(t *testing.T) {
 		want := false
-		sensor := &sensorSpy{}
+		sensor := newSensorSpy(17)
 		a := NewAlarm(sensor)
 
 		got := a.Check()
